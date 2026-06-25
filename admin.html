@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>لوحة الإشعارات - المحتال</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rakkas&family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy-deep: #0f0f1a;
+            --navy: #1a1a2e;
+            --navy-mid: #16213e;
+            --navy-light: #0f3460;
+            --emerald: #0a8a4a;
+            --emerald-dark: #087a3e;
+            --gold: #f5a623;
+            --text: #e0e0e0;
+            --text-muted: #b8b8cc;
+            --text-dim: #6B6580;
+            --border: #3D3654;
+            --card: #1E1B2A;
+            --danger: #e0524a;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
+            background: var(--navy-deep);
+            color: var(--text);
+            line-height: 1.7;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, var(--navy-deep) 0%, var(--navy-mid) 50%, var(--navy-light) 100%);
+            z-index: -3;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                radial-gradient(circle at 20% 30%, rgba(10, 138, 74, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(245, 166, 35, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(15, 52, 96, 0.12) 0%, transparent 70%);
+            z-index: -2;
+        }
+
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 40px 20px 80px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            font-family: 'Rakkas', serif;
+            font-size: 2.4rem;
+            color: var(--gold);
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+
+        .subtitle { color: var(--text-muted); font-size: 0.95rem; }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+
+        .hint {
+            font-weight: 400;
+            color: var(--text-dim);
+            font-size: 0.82rem;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        textarea,
+        select {
+            width: 100%;
+            background: var(--navy-deep);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 1rem;
+            padding: 12px 14px;
+            margin-bottom: 18px;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--emerald);
+        }
+
+        textarea { resize: vertical; min-height: 80px; }
+
+        .row { display: flex; gap: 14px; }
+        .row > div { flex: 1; }
+
+        #uuidGroup { display: none; }
+
+        button {
+            width: 100%;
+            background: linear-gradient(135deg, var(--emerald) 0%, var(--emerald-dark) 100%);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 1.05rem;
+            font-weight: 700;
+            padding: 15px;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        button:hover { transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .preview {
+            background: var(--navy);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 14px;
+            margin-bottom: 18px;
+        }
+        .preview-label { font-size: 0.78rem; color: var(--text-dim); margin-bottom: 8px; }
+        .preview-bubble {
+            background: var(--navy-mid);
+            border-radius: 10px;
+            padding: 12px 14px;
+            border-right: 3px solid var(--gold);
+        }
+        .preview-title { font-weight: 700; color: var(--text); margin-bottom: 2px; }
+        .preview-body { color: var(--text-muted); font-size: 0.9rem; }
+
+        .result {
+            margin-top: 4px;
+            padding: 14px 16px;
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            display: none;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .result.ok { display: block; background: rgba(10,138,74,0.15); border: 1px solid var(--emerald); color: #6ee7a8; }
+        .result.err { display: block; background: rgba(224,82,74,0.12); border: 1px solid var(--danger); color: #ffb3ae; }
+
+        .warn-box {
+            background: rgba(245,166,35,0.08);
+            border: 1px solid rgba(245,166,35,0.4);
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        .warn-box b { color: var(--gold); }
+
+        footer {
+            text-align: center;
+            margin-top: 28px;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+        }
+        footer a { color: var(--emerald); text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>لوحة الإشعارات</h1>
+            <p class="subtitle">إرسال إشعار للاعبين — المحتال</p>
+        </header>
+
+        <div class="warn-box">
+            <b>تنبيه أمني:</b> هذه الصفحة لا تحفظ الرمز السري. أدخله في كل مرة. لا تشارك الرمز مع أحد —
+            من يملكه يستطيع إرسال إشعار لجميع المستخدمين.
+        </div>
+
+        <div class="card">
+            <label for="secret">الرمز السري للمشرف
+                <span class="hint">(x-admin-secret — يُكتب في كل مرة، لا يُحفظ)</span>
+            </label>
+            <input type="password" id="secret" placeholder="••••••••••••••••" autocomplete="off">
+
+            <label for="title">العنوان</label>
+            <input type="text" id="title" placeholder="عنوان الإشعار" maxlength="100">
+
+            <label for="body">النص</label>
+            <textarea id="body" placeholder="نص الرسالة" maxlength="500"></textarea>
+
+            <div class="row">
+                <div>
+                    <label for="audience">الجمهور</label>
+                    <select id="audience">
+                        <option value="all">كل المستخدمين</option>
+                        <option value="specific">مستخدمون محددون (UUID)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="route">عند الضغط يفتح</label>
+                    <select id="route">
+                        <option value="home">الرئيسية</option>
+                        <option value="friend_request">الأصدقاء</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="uuidGroup">
+                <label for="uuids">معرّفات المستخدمين
+                    <span class="hint">(UUID، افصل بينها بفاصلة أو سطر)</span>
+                </label>
+                <textarea id="uuids" placeholder="11111111-2222-3333-4444-555555555555"></textarea>
+            </div>
+
+            <div class="preview">
+                <div class="preview-label">معاينة</div>
+                <div class="preview-bubble">
+                    <div class="preview-title" id="pvTitle">العنوان</div>
+                    <div class="preview-body" id="pvBody">النص</div>
+                </div>
+            </div>
+
+            <button id="sendBtn">إرسال الإشعار</button>
+        </div>
+
+        <div class="result" id="result"></div>
+
+        <footer>
+            المحتال · <a href="privacy-policy.html">سياسة الخصوصية</a>
+        </footer>
+    </div>
+
+    <script>
+        // The deployed game server. Sends go to /v1/admin/notify with the secret header.
+        var API_BASE = 'https://game-server-3vk5.onrender.com';
+        var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+        var $ = function (id) { return document.getElementById(id); };
+
+        // Live preview
+        function syncPreview() {
+            $('pvTitle').textContent = $('title').value || 'العنوان';
+            $('pvBody').textContent = $('body').value || 'النص';
+        }
+        $('title').addEventListener('input', syncPreview);
+        $('body').addEventListener('input', syncPreview);
+
+        // Toggle UUID field
+        $('audience').addEventListener('change', function () {
+            $('uuidGroup').style.display = this.value === 'specific' ? 'block' : 'none';
+        });
+
+        function showResult(ok, msg) {
+            var r = $('result');
+            r.className = 'result ' + (ok ? 'ok' : 'err');
+            r.textContent = msg;
+        }
+
+        $('sendBtn').addEventListener('click', async function () {
+            var secret = $('secret').value.trim();
+            var title = $('title').value.trim();
+            var body = $('body').value.trim();
+            var audienceMode = $('audience').value;
+            var route = $('route').value;
+
+            if (!secret) { showResult(false, 'أدخل الرمز السري أولاً.'); return; }
+            if (!title || !body) { showResult(false, 'العنوان والنص مطلوبان.'); return; }
+
+            var payload = { title: title, body: body, data: { type: route } };
+
+            if (audienceMode === 'specific') {
+                var raw = $('uuids').value.split(/[\s,]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+                if (raw.length === 0) { showResult(false, 'أدخل معرّف مستخدم واحد على الأقل.'); return; }
+                var bad = raw.filter(function (id) { return !UUID_RE.test(id); });
+                if (bad.length) { showResult(false, 'معرّفات غير صحيحة:\n' + bad.join('\n')); return; }
+                payload.audience = raw;
+            } else {
+                payload.audience = 'all';
+            }
+
+            var btn = $('sendBtn');
+            btn.disabled = true;
+            btn.textContent = 'جارٍ الإرسال...';
+            showResult(true, 'جارٍ الإرسال...');
+
+            try {
+                var res = await fetch(API_BASE + '/v1/admin/notify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
+                    body: JSON.stringify(payload)
+                });
+                var data = await res.json().catch(function () { return {}; });
+
+                if (res.ok && data.success) {
+                    showResult(true, '✅ تم الإرسال!\nوصل إلى ' + data.sent + ' جهاز، فشل ' + data.failed + '.');
+                } else if (res.status === 403) {
+                    showResult(false, '❌ الرمز السري غير صحيح (403).');
+                } else if (res.status === 400) {
+                    showResult(false, '❌ بيانات غير صالحة (400).');
+                } else if (res.status === 500 && data.error === 'ADMIN_SECRET_NOT_CONFIGURED') {
+                    showResult(false, '❌ الرمز غير مُعدّ على الخادم.');
+                } else {
+                    showResult(false, '❌ فشل الإرسال (' + res.status + '): ' + (data.error || 'خطأ غير معروف'));
+                }
+            } catch (e) {
+                showResult(false, '❌ تعذّر الاتصال بالخادم. تحقق من الإنترنت / إعداد CORS.\n' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'إرسال الإشعار';
+            }
+        });
+
+        syncPreview();
+    </script>
+</body>
+</html>
