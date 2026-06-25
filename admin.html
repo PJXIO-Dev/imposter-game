@@ -221,6 +221,13 @@
             <label for="body">النص</label>
             <textarea id="body" placeholder="نص الرسالة" maxlength="500"></textarea>
 
+            <label for="channel">نوع الإشعار</label>
+            <select id="channel">
+                <option value="both">مركز الإشعارات + داخل التطبيق</option>
+                <option value="push">مركز الإشعارات فقط (Push)</option>
+                <option value="feed">داخل التطبيق فقط (الجرس)</option>
+            </select>
+
             <div class="row">
                 <div>
                     <label for="audience">الجمهور</label>
@@ -295,11 +302,12 @@
             var body = $('body').value.trim();
             var audienceMode = $('audience').value;
             var route = $('route').value;
+            var channel = $('channel').value;
 
             if (!secret) { showResult(false, 'أدخل الرمز السري أولاً.'); return; }
             if (!title || !body) { showResult(false, 'العنوان والنص مطلوبان.'); return; }
 
-            var payload = { title: title, body: body, data: { type: route } };
+            var payload = { title: title, body: body, data: { type: route }, channel: channel };
 
             if (audienceMode === 'specific') {
                 var raw = $('uuids').value.split(/[\s,]+/).map(function (s) { return s.trim(); }).filter(Boolean);
@@ -325,7 +333,11 @@
                 var data = await res.json().catch(function () { return {}; });
 
                 if (res.ok && data.success) {
-                    showResult(true, '✅ تم الإرسال!\nوصل إلى ' + data.sent + ' جهاز، فشل ' + data.failed + '.');
+                    if (channel === 'feed') {
+                        showResult(true, '✅ تم الإرسال داخل التطبيق (الجرس) لجميع المستهدفين. لا يوجد إشعار في مركز الإشعارات.');
+                    } else {
+                        showResult(true, '✅ تم الإرسال!\nوصل إلى مركز الإشعارات في ' + data.sent + ' جهاز، فشل ' + data.failed + '.');
+                    }
                 } else if (res.status === 403) {
                     showResult(false, '❌ الرمز السري غير صحيح (403).');
                 } else if (res.status === 400) {
