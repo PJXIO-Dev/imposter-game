@@ -221,26 +221,20 @@
             <label for="body">النص</label>
             <textarea id="body" placeholder="نص الرسالة" maxlength="500"></textarea>
 
-            <label for="channel">نوع الإشعار</label>
-            <select id="channel">
-                <option value="both">مركز الإشعارات + داخل التطبيق</option>
-                <option value="push">مركز الإشعارات فقط (Push)</option>
-                <option value="feed">داخل التطبيق فقط (الجرس)</option>
-            </select>
-
             <div class="row">
+                <div>
+                    <label for="channel">نوع الإشعار</label>
+                    <select id="channel">
+                        <option value="both">مركز الإشعارات + داخل التطبيق</option>
+                        <option value="push">مركز الإشعارات فقط (Push)</option>
+                        <option value="feed">داخل التطبيق فقط (الجرس)</option>
+                    </select>
+                </div>
                 <div>
                     <label for="audience">الجمهور</label>
                     <select id="audience">
                         <option value="all">كل المستخدمين</option>
                         <option value="specific">مستخدمون محددون (UUID)</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="route">عند الضغط يفتح</label>
-                    <select id="route">
-                        <option value="home">الرئيسية</option>
-                        <option value="friend_request">الأصدقاء</option>
                     </select>
                 </div>
             </div>
@@ -301,13 +295,13 @@
             var title = $('title').value.trim();
             var body = $('body').value.trim();
             var audienceMode = $('audience').value;
-            var route = $('route').value;
             var channel = $('channel').value;
 
             if (!secret) { showResult(false, 'أدخل الرمز السري أولاً.'); return; }
             if (!title || !body) { showResult(false, 'العنوان والنص مطلوبان.'); return; }
 
-            var payload = { title: title, body: body, data: { type: route }, channel: channel };
+            // Admin announcements always tap to Home (type: 'home').
+            var payload = { title: title, body: body, data: { type: 'home' }, channel: channel };
 
             if (audienceMode === 'specific') {
                 var raw = $('uuids').value.split(/[\s,]+/).map(function (s) { return s.trim(); }).filter(Boolean);
