@@ -148,6 +148,17 @@
         button:active { transform: translateY(0); }
         button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
+        #checkBtn {
+            display: none;
+            margin-top: 12px;
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        #checkBtn:hover { border-color: var(--gold); color: var(--gold); }
+
         .preview {
             background: var(--navy);
             border: 1px solid var(--border);
@@ -267,6 +278,7 @@
         </div>
 
         <div class="result" id="result"></div>
+        <button id="checkBtn">تحقّق من التسليم الفعلي</button>
 
         <footer>
             المحتال · <a href="privacy-policy.html">سياسة الخصوصية</a>
@@ -279,6 +291,10 @@
         var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
         var $ = function (id) { return document.getElementById(id); };
+
+        // Expo ticket ids from the last send — the only handle on what actually
+        // happened to those pushes. Not persisted; a reload drops them.
+        var lastTicketIds = [];
 
         // Live preview
         function syncPreview() {
@@ -298,6 +314,53 @@
             r.className = 'result ' + (ok ? 'ok' : 'err');
             r.textContent = msg;
         }
+
+        // Expo only reports real delivery through receipts, minutes after the
+        // send. Errors here are the ones that matter: InvalidCredentials (no
+        // APNs key on the project), MismatchSenderId (tokens from a different
+        // Expo project), DeviceNotRegistered (uninstalled).
+        $('checkBtn').addEventListener('click', async function () {
+            var secret = $('secret').value.trim();
+            if (!secret) { showResult(false, 'أدخل الرمز السري للتحقق.'); return; }
+            if (!lastTicketIds.length) { showResult(false, 'لا توجد رسائل للتحقق منها.'); return; }
+
+            var btn = $('checkBtn');
+            btn.disabled = true;
+            btn.textContent = 'جارٍ التحقق...';
+
+            try {
+                var res = await fetch(API_BASE + '/v1/admin/push-receipts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret },
+                    body: JSON.stringify({ ticketIds: lastTicketIds })
+                });
+                var data = await res.json().catch(function () { return {}; });
+
+                if (!res.ok || !data.success) {
+                    showResult(false, '❌ تعذّر التحقق (' + res.status + '): ' + (data.error || 'خطأ غير معروف'));
+                    return;
+                }
+
+                var lines = ['📬 نتيجة التسليم لـ ' + data.requested + ' رسالة:',
+                             '• وصلت فعلياً: ' + data.ok,
+                             '• قيد المعالجة: ' + data.pending];
+                if (data.errors && data.errors.length) {
+                    lines.push('• فشلت:');
+                    data.errors.forEach(function (e) {
+                        lines.push('   - ' + e.error + ' × ' + e.count + (e.message ? ' — ' + e.message : ''));
+                    });
+                }
+                if (data.ok === 0 && data.pending === 0 && (!data.errors || !data.errors.length)) {
+                    lines.push('ℹ️ لا توجد إيصالات بعد — أعد المحاولة بعد بضع دقائق.');
+                }
+                showResult(data.ok > 0, lines.join('\n'));
+            } catch (e) {
+                showResult(false, '❌ تعذّر الاتصال بالخادم.\n' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'تحقّق من التسليم الفعلي';
+            }
+        });
 
         $('sendBtn').addEventListener('click', async function () {
             var secret = $('secret').value.trim();
@@ -331,6 +394,11 @@
             btn.textContent = 'جارٍ الإرسال...';
             showResult(true, 'جارٍ الإرسال...');
 
+            // Drop the previous send's tickets so the check button can't report
+            // on a message that is no longer on screen.
+            lastTicketIds = [];
+            $('checkBtn').style.display = 'none';
+
             try {
                 var res = await fetch(API_BASE + '/v1/admin/notify', {
                     method: 'POST',
@@ -340,16 +408,29 @@
                 var data = await res.json().catch(function () { return {}; });
 
                 if (res.ok && data.success) {
-                    var scope = platform === 'all' ? '' : ' — ' + (platform === 'ios' ? 'iOS' : 'Android') + ' فقط';
+                    // Trust the server's echo, not our own dropdown: an older
+                    // deploy silently ignores `platform` and sends to everyone.
+                    var applied = data.platform || 'all';
+                    var scope = applied === 'all'
+                        ? ' (كل الأنظمة)'
+                        : ' — ' + (applied === 'ios' ? 'iOS' : 'Android') + ' فقط';
+                    var warn = (applied === 'all' && platform !== 'all')
+                        ? '\n⚠️ الخادم تجاهل فلتر النظام وأرسل للجميع — النسخة المنشورة لا تدعمه بعد.'
+                        : '';
+
                     if (channel === 'feed') {
-                        showResult(true, '✅ تم الإرسال داخل التطبيق (الجرس) لجميع المستهدفين' + scope + '. لا يوجد إشعار في مركز الإشعارات.');
+                        showResult(true, '✅ تم الإرسال داخل التطبيق (الجرس)' + scope + '. لا يوجد إشعار في مركز الإشعارات.' + warn);
                     } else {
-                        var msg = '✅ تم الإرسال!' + scope + '\nوصل إلى مركز الإشعارات في ' + data.sent + ' جهاز، فشل ' + data.failed + '.';
-                        if (platform !== 'all' && data.sent === 0 && data.failed === 0) {
+                        var msg = '✅ تم قبول الإشعار' + scope + '\nقبِلت Expo ' + data.sent + ' رسالة، ورفضت ' + data.failed + '.' +
+                                  '\nℹ️ القبول لا يعني الوصول — اضغط "تحقّق من التسليم الفعلي" بعد دقيقة.' + warn;
+                        if (applied !== 'all' && data.sent === 0 && data.failed === 0) {
                             msg += '\nℹ️ لا يوجد جهاز مسجّل بهذا النظام بعد — يُسجَّل النظام عند فتح المستخدم لنسخة التطبيق المحدَّثة.';
                         }
                         showResult(true, msg);
                     }
+
+                    lastTicketIds = data.ticketIds || [];
+                    $('checkBtn').style.display = lastTicketIds.length ? 'block' : 'none';
                 } else if (res.status === 403) {
                     showResult(false, '❌ الرمز السري غير صحيح (403).');
                 } else if (res.status === 400) {
