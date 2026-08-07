@@ -239,6 +239,15 @@
                 </div>
             </div>
 
+            <label for="platform">نظام التشغيل
+                <span class="hint">(الأجهزة التي لم تُسجّل نظامها بعد لا تصلها الإشعارات المخصّصة لنظام معيّن)</span>
+            </label>
+            <select id="platform">
+                <option value="all">كل الأنظمة</option>
+                <option value="ios">iOS فقط (آيفون / آيباد)</option>
+                <option value="android">Android فقط (أندرويد)</option>
+            </select>
+
             <div id="uuidGroup">
                 <label for="uuids">معرّفات المستخدمين
                     <span class="hint">(UUID، افصل بينها بفاصلة أو سطر)</span>
@@ -296,12 +305,16 @@
             var body = $('body').value.trim();
             var audienceMode = $('audience').value;
             var channel = $('channel').value;
+            var platform = $('platform').value;
 
             if (!secret) { showResult(false, 'أدخل الرمز السري أولاً.'); return; }
             if (!title || !body) { showResult(false, 'العنوان والنص مطلوبان.'); return; }
 
             // Admin announcements always tap to Home (type: 'home').
             var payload = { title: title, body: body, data: { type: 'home' }, channel: channel };
+
+            // Omit 'all' — the server treats a missing platform as every device.
+            if (platform !== 'all') { payload.platform = platform; }
 
             if (audienceMode === 'specific') {
                 var raw = $('uuids').value.split(/[\s,]+/).map(function (s) { return s.trim(); }).filter(Boolean);
@@ -327,10 +340,15 @@
                 var data = await res.json().catch(function () { return {}; });
 
                 if (res.ok && data.success) {
+                    var scope = platform === 'all' ? '' : ' — ' + (platform === 'ios' ? 'iOS' : 'Android') + ' فقط';
                     if (channel === 'feed') {
-                        showResult(true, '✅ تم الإرسال داخل التطبيق (الجرس) لجميع المستهدفين. لا يوجد إشعار في مركز الإشعارات.');
+                        showResult(true, '✅ تم الإرسال داخل التطبيق (الجرس) لجميع المستهدفين' + scope + '. لا يوجد إشعار في مركز الإشعارات.');
                     } else {
-                        showResult(true, '✅ تم الإرسال!\nوصل إلى مركز الإشعارات في ' + data.sent + ' جهاز، فشل ' + data.failed + '.');
+                        var msg = '✅ تم الإرسال!' + scope + '\nوصل إلى مركز الإشعارات في ' + data.sent + ' جهاز، فشل ' + data.failed + '.';
+                        if (platform !== 'all' && data.sent === 0 && data.failed === 0) {
+                            msg += '\nℹ️ لا يوجد جهاز مسجّل بهذا النظام بعد — يُسجَّل النظام عند فتح المستخدم لنسخة التطبيق المحدَّثة.';
+                        }
+                        showResult(true, msg);
                     }
                 } else if (res.status === 403) {
                     showResult(false, '❌ الرمز السري غير صحيح (403).');
