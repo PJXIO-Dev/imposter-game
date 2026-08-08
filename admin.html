@@ -187,6 +187,39 @@
         }
         .result.ok { display: block; background: rgba(10,138,74,0.15); border: 1px solid var(--emerald); color: #6ee7a8; }
         .result.err { display: block; background: rgba(224,82,74,0.12); border: 1px solid var(--danger); color: #ffb3ae; }
+        .result.info { display: block; background: rgba(245,166,35,0.10); border: 1px solid rgba(245,166,35,0.5); color: #f2c46b; }
+
+        /* Delivery summary: three headline numbers, then a row per error code. */
+        .tally { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; }
+        .tally div {
+            flex: 1 1 90px;
+            background: rgba(0,0,0,0.25);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 8px 10px;
+            text-align: center;
+        }
+        .tally b { display: block; font-size: 1.35rem; color: var(--text); line-height: 1.3; }
+        .tally span { font-size: 0.75rem; color: var(--text-dim); }
+
+        .codes { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
+        .codes th, .codes td {
+            border: 1px solid var(--border);
+            padding: 7px 9px;
+            text-align: right;
+            vertical-align: top;
+        }
+        .codes th { background: rgba(0,0,0,0.3); color: var(--text-dim); font-weight: 600; font-size: 0.78rem; }
+        .codes td { color: var(--text-muted); }
+        .codes code { color: var(--text); font-size: 0.8rem; word-break: break-all; }
+        .codes .n { text-align: center; color: var(--text); font-weight: 700; white-space: nowrap; }
+        /* Benign churn vs something that needs a human. */
+        .codes tr.bad code { color: #ff9d96; }
+        .codes tr.bad .n { color: #ff9d96; }
+        .codes tr.meh code { color: #f2c46b; }
+        .sev { display: block; font-size: 0.72rem; margin-top: 3px; }
+        .sev.bad { color: #ff9d96; }
+        .sev.meh { color: var(--text-dim); }
 
         .warn-box {
             background: rgba(245,166,35,0.08);
@@ -258,6 +291,17 @@
                 <option value="ios">iOS فقط (آيفون / آيباد)</option>
                 <option value="android">Android فقط (أندرويد)</option>
             </select>
+            <!--
+              The OS filter matches on a column the app only started reporting in
+              build 99. Until enough users are on it, narrowing by OS silently
+              matches (almost) nobody — so say that before the send, not after.
+            -->
+            <div id="platformWarn" class="warn-box" style="display:none">
+                ⚠️ <b>هذا الفلتر لا يعمل بعد.</b>
+                الجهاز لا يُبلّغ عن نظامه إلا بعد تحديث التطبيق إلى النسخة الجديدة وفتحه.
+                حتى الآن <b>لا جهاز واحد</b> سجّل نظامه، فالإرسال بهذا الخيار سيصل إلى <b>صفر مستخدم</b>.
+                استخدم «كل الأنظمة» حتى ينتشر التحديث.
+            </div>
 
             <div id="uuidGroup">
                 <label for="uuids">معرّفات المستخدمين
@@ -309,6 +353,106 @@
             $('uuidGroup').style.display = this.value === 'specific' ? 'block' : 'none';
         });
 
+        // Warn the moment an OS is picked — a send that reaches nobody should
+        // never look like a normal send.
+        $('platform').addEventListener('change', function () {
+            $('platformWarn').style.display = this.value === 'all' ? 'none' : 'block';
+        });
+
+        /**
+         * What Expo's receipt error codes actually mean, and whether they need a
+         * human. `bad` = delivery is broken for everyone hitting it; `meh` =
+         * ordinary churn, nothing to do.
+         */
+        var ERROR_INFO = {
+            DeviceNotRegistered: {
+                sev: 'meh',
+                what: 'التوكن لم يعد صالحاً: المستخدم حذف التطبيق أو أعاد تثبيته أو أوقف الإشعارات أو غيّر جهازه.',
+                fix: 'طبيعي تماماً — لا إجراء. ملاحظة: التوكن المكتشف هنا يبقى مخزّناً ويُحتسب ضمن «أُرسلت» في المرات القادمة.'
+            },
+            InvalidCredentials: {
+                sev: 'bad',
+                what: 'لا توجد بيانات اعتماد صالحة للدفع على مشروع Expo (مفتاح APNs لـ iOS، أو FCM لأندرويد).',
+                fix: 'أضِف بيانات الاعتماد عبر eas credentials. لن يصل أي إشعار لهذا النظام قبل ذلك.'
+            },
+            MismatchSenderId: {
+                sev: 'bad',
+                what: 'التوكن صادر عن مشروع Expo/Firebase مختلف عن الذي يُرسل منه.',
+                fix: 'وحّد projectId بين التطبيق والخادم، ثم اطلب من المستخدمين إعادة فتح التطبيق.'
+            },
+            MessageTooBig: {
+                sev: 'bad',
+                what: 'حجم الرسالة تجاوز الحد المسموح (٤ كيلوبايت).',
+                fix: 'اختصر العنوان أو النص أو حقل data.'
+            },
+            MessageRateExceeded: {
+                sev: 'meh',
+                what: 'أُرسلت رسائل كثيرة جداً لنفس الجهاز خلال وقت قصير.',
+                fix: 'انتظر قليلاً ثم أعد الإرسال — لا حاجة لتغيير أي إعداد.'
+            },
+            ProviderError: {
+                sev: 'meh',
+                what: 'عطل مؤقت لدى Apple أو Google، وليس في التطبيق.',
+                fix: 'أعد المحاولة لاحقاً.'
+            },
+            DeveloperError: {
+                sev: 'bad',
+                what: 'الطلب المُرسل إلى Expo غير صحيح البنية.',
+                fix: 'خطأ برمجي — يحتاج مراجعة الخادم.'
+            }
+        };
+
+        function esc(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
+        /** Render the receipt summary as tallies + one explained row per code. */
+        function showReceipts(data) {
+            var failed = 0;
+            (data.errors || []).forEach(function (e) { failed += e.count; });
+
+            var html = '<b>📬 نتيجة التسليم لـ ' + esc(data.requested) + ' رسالة</b>'
+                + '<div class="tally">'
+                + '<div><b>' + esc(data.ok) + '</b><span>وصلت فعلياً</span></div>'
+                + '<div><b>' + esc(data.pending) + '</b><span>قيد المعالجة</span></div>'
+                + '<div><b>' + failed + '</b><span>فشلت</span></div>'
+                + '</div>';
+
+            if (data.errors && data.errors.length) {
+                html += '<table class="codes"><thead><tr>'
+                    + '<th>الرمز</th><th>العدد</th><th>معناه وماذا تفعل</th>'
+                    + '</tr></thead><tbody>';
+                data.errors.forEach(function (e) {
+                    var info = ERROR_INFO[e.error] || {
+                        sev: 'meh',
+                        what: 'رمز غير معروف من Expo.',
+                        fix: 'راجع نص الرسالة أدناه.'
+                    };
+                    html += '<tr class="' + info.sev + '">'
+                        + '<td><code>' + esc(e.error) + '</code>'
+                        + '<span class="sev ' + info.sev + '">'
+                        + (info.sev === 'bad' ? 'يحتاج تدخّلاً' : 'طبيعي')
+                        + '</span></td>'
+                        + '<td class="n">' + esc(e.count) + '</td>'
+                        + '<td>' + esc(info.what) + '<br><b>' + esc(info.fix) + '</b>'
+                        + (e.message ? '<br><span class="sev meh">' + esc(e.message) + '</span>' : '')
+                        + '</td></tr>';
+                });
+                html += '</tbody></table>';
+            }
+
+            var r = $('result');
+            if (data.ok === 0 && data.pending === 0 && !failed) {
+                r.className = 'result info';
+                r.innerHTML = html + 'ℹ️ لا توجد إيصالات بعد — أعد المحاولة بعد بضع دقائق.';
+                return;
+            }
+            r.className = 'result ' + (data.ok > 0 ? 'ok' : 'err');
+            r.innerHTML = html;
+        }
+
         function showResult(ok, msg) {
             var r = $('result');
             r.className = 'result ' + (ok ? 'ok' : 'err');
@@ -341,19 +485,7 @@
                     return;
                 }
 
-                var lines = ['📬 نتيجة التسليم لـ ' + data.requested + ' رسالة:',
-                             '• وصلت فعلياً: ' + data.ok,
-                             '• قيد المعالجة: ' + data.pending];
-                if (data.errors && data.errors.length) {
-                    lines.push('• فشلت:');
-                    data.errors.forEach(function (e) {
-                        lines.push('   - ' + e.error + ' × ' + e.count + (e.message ? ' — ' + e.message : ''));
-                    });
-                }
-                if (data.ok === 0 && data.pending === 0 && (!data.errors || !data.errors.length)) {
-                    lines.push('ℹ️ لا توجد إيصالات بعد — أعد المحاولة بعد بضع دقائق.');
-                }
-                showResult(data.ok > 0, lines.join('\n'));
+                showReceipts(data);
             } catch (e) {
                 showResult(false, '❌ تعذّر الاتصال بالخادم.\n' + e.message);
             } finally {
