@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حذف الحساب - المحتال</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rakkas&family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy-deep: #0f0f1a;
+            --navy: #1a1a2e;
+            --navy-mid: #16213e;
+            --navy-light: #0f3460;
+            --emerald: #0a8a4a;
+            --emerald-dark: #087a3e;
+            --gold: #f5a623;
+            --text: #e0e0e0;
+            --text-muted: #b8b8cc;
+            --text-dim: #6B6580;
+            --border: #3D3654;
+            --card: #1E1B2A;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
+            background: var(--navy-deep);
+            color: var(--text);
+            line-height: 1.8;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, var(--navy-deep) 0%, var(--navy-mid) 50%, var(--navy-light) 100%);
+            z-index: -3;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                radial-gradient(circle at 20% 30%, rgba(10, 138, 74, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(245, 166, 35, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(15, 52, 96, 0.12) 0%, transparent 70%);
+            z-index: -2;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 32px 24px 48px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 48px 0 32px;
+        }
+
+        .hero h1 {
+            font-family: 'Rakkas', serif;
+            color: var(--gold);
+            font-size: 42px;
+            font-weight: 400;
+            margin-bottom: 4px;
+            text-shadow: 0 2px 12px rgba(245, 166, 35, 0.2);
+        }
+
+        .hero .subtitle {
+            font-family: 'Rakkas', serif;
+            color: var(--emerald);
+            font-size: 20px;
+            font-weight: 400;
+        }
+
+        .date {
+            color: var(--text-dim);
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .intro {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+            margin-bottom: 32px;
+            font-size: 16px;
+            line-height: 1.9;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        h2 {
+            font-family: 'Rakkas', serif;
+            color: var(--gold);
+            font-size: 22px;
+            font-weight: 400;
+            margin-top: 36px;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        p, li {
+            font-size: 15px;
+            margin-bottom: 12px;
+            color: var(--text-muted);
+            line-height: 1.9;
+        }
+
+        strong { color: var(--text); }
+
+        ul, ol {
+            padding-right: 24px;
+            margin-bottom: 16px;
+        }
+
+        li { margin-bottom: 10px; }
+        li strong { color: var(--emerald); }
+
+        a {
+            color: var(--emerald);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        a:hover { color: var(--gold); }
+
+        .section-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin: 16px 0;
+        }
+
+        .steps {
+            counter-reset: step;
+            list-style: none;
+            padding: 0;
+        }
+
+        .steps li {
+            counter-increment: step;
+            position: relative;
+            padding-right: 44px;
+            margin-bottom: 16px;
+            color: var(--text-muted);
+        }
+
+        .steps li::before {
+            content: counter(step);
+            position: absolute;
+            right: 0;
+            top: 2px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--emerald);
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .phrase {
+            display: inline-block;
+            background: var(--navy);
+            border: 1px solid var(--gold);
+            border-radius: var(--radius-md);
+            color: var(--gold);
+            font-weight: 700;
+            padding: 4px 14px;
+            margin: 0 4px;
+        }
+
+        .contact-box {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: 28px;
+            margin-top: 16px;
+            text-align: center;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .contact-box a {
+            font-size: 18px;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+
+        .contact-box p {
+            color: var(--text-dim);
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .en {
+            direction: ltr;
+            text-align: left;
+        }
+
+        .en ul, .en ol {
+            padding-right: 0;
+            padding-left: 24px;
+        }
+
+        .en .steps li {
+            padding-right: 0;
+            padding-left: 44px;
+        }
+
+        .en .steps li::before {
+            right: auto;
+            left: 0;
+        }
+
+        .footer {
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 14px;
+        }
+
+        .footer a { color: var(--emerald); }
+
+        .footer .copyright {
+            margin-top: 12px;
+            font-size: 13px;
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 20px 16px 40px; }
+            .hero { padding: 32px 0 24px; }
+            .hero h1 { font-size: 34px; }
+            .hero .subtitle { font-size: 17px; }
+            .intro { padding: 18px; }
+            h2 { font-size: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="hero">
+        <h1>المحتال</h1>
+        <div class="subtitle">حذف الحساب</div>
+    </div>
+
+    <p class="date">آخر تحديث: 18 أغسطس 2026</p>
+
+    <div class="intro">
+        هذه الصفحة تشرح كيف تطلب حذف حسابك والبيانات المرتبطة به في تطبيق
+        <strong>مين الامبوستر؟ (المحتال)</strong>، وما الذي يُحذف وما الذي يبقى.
+    </div>
+
+    <h2>1. خطوات حذف حسابك من داخل التطبيق</h2>
+    <ol class="steps">
+        <li>افتح تطبيق <strong>مين الامبوستر؟</strong> وسجّل الدخول بحسابك.</li>
+        <li>اذهب إلى <strong>الملف الشخصي</strong> ثم <strong>الإعدادات</strong>.</li>
+        <li>اضغط على <strong>حذف الحساب</strong>.</li>
+        <li>اكتب عبارة التأكيد <span class="phrase">حذف حسابي</span> في الحقل المطلوب.</li>
+        <li>أكّد العملية. يتم تنفيذ الحذف فورا ويتم تسجيل خروجك من التطبيق.</li>
+    </ol>
+
+    <h2>2. البيانات التي تُحذف</h2>
+    <div class="section-card">
+        <ul>
+            <li><strong>البريد الإلكتروني:</strong> يُزال نهائيا من قاعدة بياناتنا.</li>
+            <li><strong>اسم العرض:</strong> يُستبدل باسم مجهول هو «لاعب محذوف».</li>
+            <li><strong>الصورة الرمزية:</strong> تُزال من ملفك الشخصي.</li>
+        </ul>
+    </div>
+
+    <h2>3. البيانات التي يُحتفظ بها</h2>
+    <div class="section-card">
+        <ul>
+            <li><strong>سجل المباريات والإحصائيات:</strong> يبقى محفوظا <strong>بشكل مجهول الهوية</strong>،
+                أي دون بريدك الإلكتروني أو اسمك أو صورتك. سبب ذلك أن نتائج الجولات مشتركة بينك وبين
+                لاعبين آخرين، وحذفها بالكامل يُفسد سجلاتهم هم أيضا.</li>
+        </ul>
+    </div>
+
+    <h2>4. مدة الاحتفاظ</h2>
+    <p>
+        يُحتفظ بالسجل المجهول إلى أجل غير مسمى، لأنه بعد إزالة البريد الإلكتروني واسم العرض
+        والصورة الرمزية لم يعد يحتوي على أي بيانات تعرّف بك.
+    </p>
+
+    <h2>5. حسابات الضيوف</h2>
+    <p>
+        حسابات الضيوف تُنشأ باسم عرض فقط، دون بريد إلكتروني أو كلمة مرور، ولا يمكن حذفها من داخل
+        التطبيق حاليا. لطلب حذف حساب ضيف، راسلنا على البريد الموجود في الأسفل مع ذكر اسم العرض
+        الذي استخدمته، وسنقوم بالحذف نيابة عنك.
+    </p>
+
+    <h2>6. تواصل معنا</h2>
+    <p>لأي سؤال أو طلب متعلق بحذف الحساب:</p>
+    <div class="contact-box">
+        <a href="mailto:molu18624dev@gmail.com?subject=طلب حذف الحساب - المحتال">molu18624dev@gmail.com</a>
+        <p>أو قم بزيارة <a href="support.html">صفحة الدعم</a></p>
+    </div>
+
+    <div class="en">
+        <h2>Account Deletion (English)</h2>
+
+        <p>
+            This page explains how to request deletion of your account and associated data for the
+            app <strong>مين الامبوستر؟ (Al-Muhtal)</strong>.
+        </p>
+
+        <p><strong>Steps to delete your account in the app:</strong></p>
+        <ol class="steps">
+            <li>Open the app and sign in to your account.</li>
+            <li>Go to <strong>Profile</strong>, then <strong>Settings</strong>.</li>
+            <li>Tap <strong>Delete Account</strong>.</li>
+            <li>Type the confirmation phrase <span class="phrase">حذف حسابي</span> in the field shown.</li>
+            <li>Confirm. Deletion runs immediately and you are signed out.</li>
+        </ol>
+
+        <p><strong>Data that is deleted:</strong></p>
+        <ul>
+            <li>Email address — permanently removed from our database.</li>
+            <li>Display name — replaced with the anonymous label &laquo;لاعب محذوف&raquo; (deleted player).</li>
+            <li>Profile avatar — removed from your profile.</li>
+        </ul>
+
+        <p><strong>Data that is kept:</strong></p>
+        <ul>
+            <li>Match history and game statistics are retained in <strong>anonymised</strong> form, with
+                no email address, name or avatar attached. Match results are shared between you and
+                the other players in the same rounds, so removing them entirely would corrupt those
+                players' records too.</li>
+        </ul>
+
+        <p><strong>Retention period:</strong> the anonymised record is kept indefinitely, because once
+            the email address, display name and avatar are removed it no longer contains any
+            information that identifies you.</p>
+
+        <p><strong>Guest accounts:</strong> guest accounts are created with a display name only, with no
+            email or password, and cannot currently be deleted from inside the app. To request deletion
+            of a guest account, email us at
+            <a href="mailto:molu18624dev@gmail.com?subject=Guest account deletion request">molu18624dev@gmail.com</a>
+            with the display name you used, and we will delete it for you.</p>
+    </div>
+
+    <div class="footer">
+        <a href="privacy-policy.html">سياسة الخصوصية</a> &nbsp;·&nbsp;
+        <a href="support.html">الدعم الفني</a>
+        <div class="copyright">المحتال &copy; 2026 - جميع الحقوق محفوظة</div>
+    </div>
+
+</div>
+
+</body>
+</html>
