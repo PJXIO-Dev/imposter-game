@@ -283,24 +283,26 @@
                 </div>
             </div>
 
-            <label for="platform">نظام التشغيل
-                <span class="hint">(الأجهزة التي لم تُسجّل نظامها بعد لا تصلها الإشعارات المخصّصة لنظام معيّن)</span>
-            </label>
-            <select id="platform">
-                <option value="all">كل الأنظمة</option>
-                <option value="ios">iOS فقط (آيفون / آيباد)</option>
-                <option value="android">Android فقط (أندرويد)</option>
-            </select>
-            <!--
-              The OS filter matches on a column the app only started reporting in
-              build 99. Until enough users are on it, narrowing by OS silently
-              matches (almost) nobody — so say that before the send, not after.
-            -->
-            <div id="platformWarn" class="warn-box" style="display:none">
-                ⚠️ <b>هذا الفلتر لا يعمل بعد.</b>
-                الجهاز لا يُبلّغ عن نظامه إلا بعد تحديث التطبيق إلى النسخة الجديدة وفتحه.
-                حتى الآن <b>لا جهاز واحد</b> سجّل نظامه، فالإرسال بهذا الخيار سيصل إلى <b>صفر مستخدم</b>.
-                استخدم «كل الأنظمة» حتى ينتشر التحديث.
+            <div id="platformRow">
+                <label for="platform">نظام التشغيل
+                    <span class="hint">(الأجهزة التي لم تُسجّل نظامها بعد لا تصلها الإشعارات المخصّصة لنظام معيّن)</span>
+                </label>
+                <select id="platform">
+                    <option value="all">كل الأنظمة</option>
+                    <option value="ios">iOS فقط (آيفون / آيباد)</option>
+                    <option value="android">Android فقط (أندرويد)</option>
+                </select>
+                <!--
+                  The OS filter matches on a column the app only started reporting in
+                  build 99. Until enough users are on it, narrowing by OS silently
+                  matches (almost) nobody — so say that before the send, not after.
+                -->
+                <div id="platformWarn" class="warn-box" style="display:none">
+                    ⚠️ <b>هذا الفلتر لا يعمل بعد.</b>
+                    الجهاز لا يُبلّغ عن نظامه إلا بعد تحديث التطبيق إلى النسخة الجديدة وفتحه.
+                    حتى الآن <b>لا جهاز واحد</b> سجّل نظامه، فالإرسال بهذا الخيار سيصل إلى <b>صفر مستخدم</b>.
+                    استخدم «كل الأنظمة» حتى ينتشر التحديث.
+                </div>
             </div>
 
             <div id="uuidGroup">
@@ -350,7 +352,12 @@
 
         // Toggle UUID field
         $('audience').addEventListener('change', function () {
-            $('uuidGroup').style.display = this.value === 'specific' ? 'block' : 'none';
+            var specific = this.value === 'specific';
+            $('uuidGroup').style.display = specific ? 'block' : 'none';
+            // A UUID names a person — their OS is already decided, so an OS filter
+            // could only subtract from an explicit choice.
+            $('platformRow').style.display = specific ? 'none' : 'block';
+            if (specific) { $('platform').value = 'all'; $('platformWarn').style.display = 'none'; }
         });
 
         // Warn the moment an OS is picked — a send that reaches nobody should
@@ -509,7 +516,10 @@
             var payload = { title: title, body: body, data: { type: 'home' }, channel: channel };
 
             // Omit 'all' — the server treats a missing platform as every device.
-            if (platform !== 'all') { payload.platform = platform; }
+            // Naming users wins outright: the server ignores platform when an
+            // explicit audience is given, and a stale selection surviving an
+            // audience switch must not travel with the request either.
+            if (platform !== 'all' && audienceMode !== 'specific') { payload.platform = platform; }
 
             if (audienceMode === 'specific') {
                 var raw = $('uuids').value.split(/[\s,]+/).map(function (s) { return s.trim(); }).filter(Boolean);
