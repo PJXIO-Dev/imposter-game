@@ -232,6 +232,44 @@
         }
         .warn-box b { color: var(--gold); }
 
+        /*
+          Audience preview. Hidden until the server answers: an older deploy has
+          no /v1/admin/audience, and a stale or absent number would be worse
+          than none here — this box exists precisely because a wrong audience
+          used to be invisible.
+        */
+        #audienceBox {
+            display: none;
+            background: rgba(10,138,74,0.08);
+            border: 1px solid rgba(10,138,74,0.4);
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        #audienceBox.is-loading { opacity: 0.55; }
+        .aud-figures { display: flex; gap: 10px; margin-top: 9px; }
+        .aud-fig {
+            flex: 1 1 0;
+            background: rgba(0,0,0,0.22);
+            border-radius: var(--radius-md);
+            padding: 9px 10px;
+            text-align: center;
+        }
+        .aud-fig b {
+            display: block;
+            color: var(--text);
+            font-size: 1.25rem;
+            font-weight: 700;
+            line-height: 1.25;
+        }
+        .aud-fig span { font-size: 0.74rem; color: var(--text-dim); }
+        .aud-note { margin-top: 9px; font-size: 0.78rem; color: var(--text-dim); }
+        /* One caveat per line — joined into a paragraph they read as noise. */
+        .aud-note div { margin-top: 5px; padding-inline-start: 13px; position: relative; line-height: 1.5; }
+        .aud-note div::before { content: '•'; position: absolute; inset-inline-start: 0; color: var(--text-dim); }
+
         footer {
             text-align: center;
             margin-top: 28px;
@@ -325,6 +363,15 @@
                 </div>
             </div>
 
+            <div id="audienceBox">
+                <b>من سيصله هذا الإشعار؟</b>
+                <div class="aud-figures">
+                    <div class="aud-fig" id="audDeviceFig"><b id="audDevices">—</b><span>جهاز يصله إشعار</span></div>
+                    <div class="aud-fig" id="audInboxFig"><b id="audInbox">—</b><span>صندوق وارد داخل التطبيق</span></div>
+                </div>
+                <div class="aud-note" id="audNote"></div>
+            </div>
+
             <button id="sendBtn">إرسال الإشعار</button>
         </div>
 
@@ -364,6 +411,105 @@
             $('platformRow').style.display = specific ? 'none' : 'block';
             if (specific) { $('platform').value = 'all'; $('platformWarn').style.display = 'none'; }
         });
+
+        /**
+         * Audience preview.
+         *
+         * The panel used to give no clue who a send would reach, which is how an
+         * "Android" broadcast could go to 14 of 408 devices and look completely
+         * normal. The server answers with the SAME query the send runs, so this
+         * cannot drift from reality.
+         *
+         * Hidden unless the server answers: an older deploy has no such route,
+         * and a stale number here would be worse than an empty space.
+         */
+        var audSeq = 0;          // only the newest reply may paint
+        var audTimer = null;
+        var audSupported = true; // flipped off for good on a 404
+
+        function audienceQuery() {
+            var q = [];
+            if ($('audience').value === 'specific') {
+                var ids = $('uuids').value.split(/[\s,]+/).map(function (x) { return x.trim(); }).filter(Boolean);
+                if (!ids.length || ids.some(function (id) { return !UUID_RE.test(id); })) return null;
+                q.push('audience=' + encodeURIComponent(ids.join(',')));
+            } else if ($('platform').value !== 'all') {
+                q.push('platform=' + encodeURIComponent($('platform').value));
+            }
+            return q.join('&');
+        }
+
+        async function refreshAudience() {
+            var box = $('audienceBox');
+            var secret = $('secret').value.trim();
+            var qs = audienceQuery();
+
+            // No secret, malformed UUIDs, or an unsupported server: say nothing.
+            if (!audSupported || !secret || qs === null) { box.style.display = 'none'; return; }
+
+            var seq = ++audSeq;
+            box.style.display = 'block';
+            box.classList.add('is-loading');
+
+            try {
+                var res = await fetch(API_BASE + '/v1/admin/audience' + (qs ? '?' + qs : ''), {
+                    headers: { 'x-admin-secret': secret }
+                });
+                if (res.status === 404) { audSupported = false; box.style.display = 'none'; return; }
+                var data = await res.json().catch(function () { return {}; });
+                if (seq !== audSeq) return;                       // superseded
+                if (!res.ok || !data.success) { box.style.display = 'none'; return; }
+
+                var channel = $('channel').value;
+                var pushes = channel === 'feed' ? 0 : data.devices;
+                var inbox = channel === 'push' ? 0 : data.inbox;
+
+                $('audDevices').textContent = pushes;
+                $('audInbox').textContent = inbox;
+                $('audDeviceFig').style.display = channel === 'feed' ? 'none' : '';
+                $('audInboxFig').style.display = channel === 'push' ? 'none' : '';
+
+                // The gap between "has the app" and "can be pushed" is the number
+                // that explains a disappointing result, so state it up front.
+                var notes = [];
+                var noToken = data.inbox - data.tokens;
+                if (channel !== 'feed' && noToken > 0) {
+                    notes.push(noToken + ' مستخدم بلا رمز إشعارات (لم يمنح الإذن أو حذف التطبيق) — يرى الجرس فقط.');
+                }
+                if (channel !== 'feed' && data.tokens > data.devices) {
+                    notes.push((data.tokens - data.devices) + ' حساب إضافي يشترك في جهاز مسجَّل — يصل الإشعار للجهاز مرة واحدة.');
+                }
+                if ($('audience').value !== 'specific' && $('platform').value !== 'all') {
+                    notes.push('الفلتر يستثني فقط الأجهزة المعروف أنها تعمل بنظام آخر.');
+                }
+                // Built as nodes, one per line: joined into a paragraph these
+                // read as noise, and the tokenless count is the single number
+                // that explains a disappointing result.
+                var note = $('audNote');
+                note.textContent = '';
+                notes.forEach(function (text) {
+                    var line = document.createElement('div');
+                    line.textContent = text;
+                    note.appendChild(line);
+                });
+            } catch (e) {
+                if (seq === audSeq) box.style.display = 'none';   // offline — stay quiet
+            } finally {
+                if (seq === audSeq) box.classList.remove('is-loading');
+            }
+        }
+
+        /** Typing shouldn't fire a request per keystroke. */
+        function queueAudience() {
+            clearTimeout(audTimer);
+            audTimer = setTimeout(refreshAudience, 350);
+        }
+
+        ['audience', 'platform', 'channel'].forEach(function (id) {
+            $(id).addEventListener('change', refreshAudience);
+        });
+        $('secret').addEventListener('input', queueAudience);
+        $('uuids').addEventListener('input', queueAudience);
 
         // Warn the moment an OS is picked — a send that reaches nobody should
         // never look like a normal send.
