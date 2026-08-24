@@ -293,15 +293,20 @@
                     <option value="android">Android فقط (أندرويد)</option>
                 </select>
                 <!--
-                  The OS filter matches on a column the app only started reporting in
-                  build 99. Until enough users are on it, narrowing by OS silently
-                  matches (almost) nobody — so say that before the send, not after.
+                  The OS filter reads a column the app only began reporting in build
+                  99, and it fills in lazily — one user at a time, when they next open
+                  the app. It used to match that column exactly, which read "unknown"
+                  as "not this OS" and silently dropped almost the whole audience.
+                  The server now excludes only devices known to run the OTHER OS, so
+                  the filter over-delivers rather than under-delivers. Say which way
+                  it errs before the send, not after.
                 -->
                 <div id="platformWarn" class="warn-box" style="display:none">
-                    ⚠️ <b>هذا الفلتر لا يعمل بعد.</b>
-                    الجهاز لا يُبلّغ عن نظامه إلا بعد تحديث التطبيق إلى النسخة الجديدة وفتحه.
-                    حتى الآن <b>لا جهاز واحد</b> سجّل نظامه، فالإرسال بهذا الخيار سيصل إلى <b>صفر مستخدم</b>.
-                    استخدم «كل الأنظمة» حتى ينتشر التحديث.
+                    ⚠️ <b>هذا الفلتر تقريبي.</b>
+                    الجهاز لا يُبلّغ عن نظامه إلا بعد تحديث التطبيق إلى النسخة الجديدة وفتحه،
+                    و<b>معظم الأجهزة لم تُبلّغ بعد</b>. الفلتر يستثني فقط الأجهزة المعروف أنها تعمل بنظام آخر،
+                    لذلك ستصل الرسالة أيضاً إلى كل جهاز لم يُسجّل نظامه.
+                    استخدم «كل الأنظمة» ما لم يكن الاستثناء مقصوداً.
                 </div>
             </div>
 
