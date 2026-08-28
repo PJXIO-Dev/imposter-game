@@ -611,9 +611,12 @@
             r.innerHTML = html;
         }
 
-        function showResult(ok, msg) {
+        // `state` is true (ok) / false (err) / 'info' (amber). The amber state
+        // exists for an outcome that is neither: a send the server accepted but
+        // that reached zero devices is not a success, and it is not an error.
+        function showResult(state, msg) {
             var r = $('result');
-            r.className = 'result ' + (ok ? 'ok' : 'err');
+            r.className = 'result ' + (state === 'info' ? 'info' : (state ? 'ok' : 'err'));
             r.textContent = msg;
         }
 
@@ -713,13 +716,28 @@
 
                     if (channel === 'feed') {
                         showResult(true, '✅ تم الإرسال داخل التطبيق (الجرس)' + scope + '. لا يوجد إشعار في مركز الإشعارات.' + warn);
-                    } else {
-                        var msg = '✅ تم قبول الإشعار' + scope + '\nقبِلت Expo ' + data.sent + ' رسالة، ورفضت ' + data.failed + '.' +
-                                  '\nℹ️ القبول لا يعني الوصول — اضغط "تحقّق من التسليم الفعلي" بعد دقيقة.' + warn;
-                        if (applied !== 'all' && data.sent === 0 && data.failed === 0) {
-                            msg += '\nℹ️ لا يوجد جهاز مسجّل بهذا النظام بعد — يُسجَّل النظام عند فتح المستخدم لنسخة التطبيق المحدَّثة.';
+                    } else if (data.sent === 0 && data.failed === 0) {
+                        // Expo was handed nothing at all: every targeted account
+                        // is without a push token, so there was no delivery to
+                        // succeed OR fail. This used to render GREEN, and only
+                        // explained itself when a platform filter was applied —
+                        // so a named-audience send to a tokenless user reported
+                        // success and reached nobody. `sent:0, failed:0` is
+                        // exactly what pushSender returns for an empty token
+                        // list; it must never read as green.
+                        var none = '⚠️ لم يُرسَل إلى أي جهاز' + scope
+                                 + '\nلا يملك أيٌّ من المستهدَفين رمز إشعارات، فلم تُسلَّم أي رسالة إلى Expo.'
+                                 + '\nالأسباب المعتادة: لم يُمنَح إذن الإشعارات، أو حُذف التطبيق، أو لم يُفتَح الحساب على جهاز حقيقي (المحاكي لا يُصدِر رمزًا).';
+                        if (applied !== 'all') {
+                            none += '\nℹ️ لا يوجد جهاز مسجّل بهذا النظام بعد — يُسجَّل النظام عند فتح المستخدم لنسخة التطبيق المحدَّثة.';
                         }
-                        showResult(true, msg);
+                        if (channel !== 'push') {
+                            none += '\nℹ️ صفّ الجرس داخل التطبيق حُفظ رغم ذلك — سيراه المستخدم عند فتح التطبيق.';
+                        }
+                        showResult('info', none + warn);
+                    } else {
+                        showResult(true, '✅ تم قبول الإشعار' + scope + '\nقبِلت Expo ' + data.sent + ' رسالة، ورفضت ' + data.failed + '.' +
+                                  '\nℹ️ القبول لا يعني الوصول — اضغط "تحقّق من التسليم الفعلي" بعد دقيقة.' + warn);
                     }
 
                     lastTicketIds = data.ticketIds || [];
